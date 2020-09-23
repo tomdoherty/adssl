@@ -15,5 +15,6 @@ GLOBAL OPTIONS:
    --username value, -u value  username to authenticate with (default: "tom") [$USER]
    --password value, -p value  username to authenticate with (default: "password") [$PASSWORD]
    --hosts value, -l value     comma delimited list of hosts to add to cert (default: "foo1,foo2,foo3") [$HOSTSLIST]
+   --k8s-secret, -k            output as a kubernetes secret (default: false)
    --help, -h                  show help (default: false)
 ```
