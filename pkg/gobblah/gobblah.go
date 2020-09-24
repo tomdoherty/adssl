@@ -1,11 +1,11 @@
 package gobblah
 
 import (
-	"fmt"
 	"log"
 	"os/user"
 
 	"github.com/tomdoherty/gobblah/pkg/adssl"
+	"github.com/tomdoherty/gobblah/pkg/output/files"
 	"github.com/tomdoherty/gobblah/pkg/output/kubernetes"
 	"github.com/urfave/cli/v2"
 )
@@ -74,12 +74,10 @@ func (c *Config) Run(args []string) error {
 			var res Result
 			var err error
 			res.Cacrt, res.Tlskey, res.Tlscrt, err = adssl.CreateCertificates(c.Endpoint, c.Username, c.Password, c.Hosts)
-			if !ctx.Bool("k8s-secret") {
-				fmt.Println("cacrt: ", res.Cacrt)
-				fmt.Println("tlskey: ", res.Tlskey)
-				fmt.Println("tlscert: ", res.Tlscrt)
-			} else {
+			if ctx.Bool("k8s-secret") {
 				kubernetes.OutputSecret(res.Cacrt, res.Tlskey, res.Tlscrt)
+			} else {
+				files.OutputFiles(res.Cacrt, res.Tlskey, res.Tlscrt)
 			}
 			return err
 		},
