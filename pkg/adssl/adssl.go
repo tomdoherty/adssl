@@ -2,23 +2,21 @@ package adssl
 
 import (
 	"bytes"
-	"encoding/pem"
-	"fmt"
-	"io/ioutil"
-	"log"
-	"regexp"
-	"strconv"
-	"strings"
-
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
-
+	"encoding/pem"
+	"fmt"
+	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
+	"strconv"
+	"strings"
 
 	"github.com/Azure/go-ntlmssp"
 )
@@ -56,10 +54,17 @@ func hostsToNetIP(hosts []string) (output []net.IP) {
 }
 
 func genCsr(template x509.CertificateRequest, keyBytes *rsa.PrivateKey) (bytes.Buffer, error) {
-	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, keyBytes)
 	var csr bytes.Buffer
-	pem.Encode(&csr, &pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
-	return csr, err
+	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, keyBytes)
+
+	if err != nil {
+		return csr, fmt.Errorf("failed to create CSR: %v", err)
+	}
+
+	if err = pem.Encode(&csr, &pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes}); err != nil {
+		return csr, fmt.Errorf("failed to create CSR: %v", err)
+	}
+	return csr, nil
 }
 
 func getCaCert(endpoint string, username string, password string) (string, error) {
@@ -73,18 +78,22 @@ func getCaCert(endpoint string, username string, password string) (string, error
 	req, err := http.NewRequest("GET", "https://"+endpoint+"/certsrv/certcarc.asp", nil)
 
 	if err != nil {
-		panic(err)
+		return "", fmt.Errorf("failed to get ca cer: %v", err)
 	}
+
 	req.SetBasicAuth(username, password)
 	resp, err := client.Do(req)
+	defer resp.Body.Close()
 
 	if err != nil {
 		return "", fmt.Errorf("fail: %v", err)
 	}
 
-	defer resp.Body.Close()
-
 	dataInBytes, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		return "", fmt.Errorf("fail: %v", err)
+	}
 
 	re := regexp.MustCompile("nRenewals=([0-9]+);")
 
@@ -96,23 +105,28 @@ func getCaCert(endpoint string, username string, password string) (string, error
 	}
 
 	crtUrl := "https://" + endpoint + "/certsrv/certnew.cer?ReqID=CACert&Enc=b64&Mode=inst&" + renewal
-	req, _ = http.NewRequest("GET", crtUrl, nil)
+	req, err = http.NewRequest("GET", crtUrl, nil)
+
+	if err != nil {
+		return "", fmt.Errorf("failed to request %s: %v", crtUrl, err)
+	}
+
 	req.SetBasicAuth(username, password)
 	resp, err = client.Do(req)
-
 	defer resp.Body.Close()
 
 	if err != nil {
-		fmt.Println("fail: %v", err)
-		return "", err
+		return "", fmt.Errorf("failed to request %s: %v", crtUrl, err)
 	}
 
 	dataInBytes, err = ioutil.ReadAll(resp.Body)
-	return string(dataInBytes), nil
+	return string(dataInBytes), err
 
 }
 
 func genCertRequest(csr string, endpoint string, username string, password string) (string, error) {
+	var resUrl string
+
 	data := url.Values{}
 	data.Set("Mode", "newreq")
 	data.Set("CertRequest", csr)
@@ -127,7 +141,13 @@ func genCertRequest(csr string, endpoint string, username string, password strin
 			},
 		},
 	}
-	req, _ := http.NewRequest("POST", "https://" + endpoint + "/certsrv/certfnsh.asp", strings.NewReader(data.Encode()))
+
+	req, err := http.NewRequest("POST", "https://"+endpoint+"/certsrv/certfnsh.asp", strings.NewReader(data.Encode()))
+
+	if err != nil {
+		return "", fmt.Errorf("failed to request cert request: %v", err)
+	}
+
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
 	req.SetBasicAuth(username, password)
@@ -136,19 +156,22 @@ func genCertRequest(csr string, endpoint string, username string, password strin
 	defer resp.Body.Close()
 
 	if err != nil {
-		fmt.Println("fail: %v", err)
-		return "", err
+		return "", fmt.Errorf("fail: %v", err)
 	}
 
 	dataInBytes, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		return "", fmt.Errorf("fail: %v", err)
+	}
+
 	pageContent := string(dataInBytes)
 
 	re := regexp.MustCompile("certnew.cer\\?ReqID=([0-9]*)&amp;Enc=b64")
 	reqId := re.FindString(string(pageContent))
-	var resUrl string
 
 	if reqId == "" {
-		fmt.Println("No matches.")
+		return "", fmt.Errorf("failed to get new cert ReqID: %v", err)
 	} else {
 		resUrl = "https://" + endpoint + "/certsrv/" + reqId
 	}
@@ -156,7 +179,6 @@ func genCertRequest(csr string, endpoint string, username string, password strin
 }
 
 func fetchCertResult(resUrl string, username string, password string) (string, error) {
-
 	client := &http.Client{
 		Transport: ntlmssp.Negotiator{
 			RoundTripper: &http.Transport{
@@ -164,48 +186,62 @@ func fetchCertResult(resUrl string, username string, password string) (string, e
 			},
 		},
 	}
-	req, _ := http.NewRequest("GET", resUrl, nil)
+	req, err := http.NewRequest("GET", resUrl, nil)
+
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch resulting cert: %v", err)
+	}
+
 	req.SetBasicAuth(username, password)
 	resp, err := client.Do(req)
 
 	defer resp.Body.Close()
 
 	if err != nil {
-		fmt.Println("fail: %v", err)
-		return "", err
+		return "", fmt.Errorf("failed to fetch resulting cert: %v", err)
 	}
 
 	dataInBytes, err := ioutil.ReadAll(resp.Body)
-	return string(dataInBytes), nil
+	return string(dataInBytes), err
 }
 
-func CreateCertificates(endpoint string, username string, password string, hosts string) {
-
+func CreateCertificates(endpoint string, username string, password string, hosts string) (cacrt string, tlskey string, tlscert string, err error) {
 	var privateKey bytes.Buffer
-	keyBytes, err  := rsa.GenerateKey(rand.Reader, 2048)
+
+	keyBytes, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		log.Fatal("failed to generate rsa key")
 	}
 
-	pem.Encode(&privateKey, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(keyBytes)})
+	if err := pem.Encode(&privateKey, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(keyBytes)}); err != nil {
+		return "", "", "", fmt.Errorf("failed to encode private key: %v", err)
+	}
 
 	caCrt, err := getCaCert(endpoint, username, password)
+
 	if err != nil {
-		log.Fatal("failed to fetch ca.crt")
+		return "", "", "", fmt.Errorf("failed to fetch cacrt: %v", err)
 	}
-	fmt.Printf("ca.crt:\n%s\n", caCrt)
 
 	template := generateTemplate(strings.Split(hosts, ","))
 
 	csr, err := genCsr(template, keyBytes)
+
 	if err != nil {
-		fmt.Println("failed to generate CSR %v", err)
-		return
+		return "", "", "", fmt.Errorf("failed to generate csr: %v", err)
 	}
 
-	resUrl, _ := genCertRequest(csr.String(), endpoint, username, password)
-	resCrt, _ := fetchCertResult(resUrl, username, password)
+	resUrl, err := genCertRequest(csr.String(), endpoint, username, password)
 
-	fmt.Printf("tls.key\n%s\n", privateKey.String())
-	fmt.Printf("tls.crt\n%s\n", resCrt)
+	if err != nil {
+		return "", "", "", fmt.Errorf("failed to generate csr: %v", err)
+	}
+
+	resCrt, err := fetchCertResult(resUrl, username, password)
+
+	if err != nil {
+		return "", "", "", fmt.Errorf("failed to fetch result: %v", err)
+	}
+
+	return caCrt, privateKey.String(), resCrt, nil
 }
