@@ -6,6 +6,7 @@ import (
 	"log"
 )
 
+// OutputFiles writes certs/keys to files
 func OutputFiles(cacrt string, tlskey string, tlscrt string) error {
 	log.Println("writing ca.crt")
 	if err := ioutil.WriteFile("ca.crt", []byte(cacrt), 0600); err != nil {

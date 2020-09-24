@@ -104,11 +104,11 @@ func getCaCert(endpoint string, username string, password string) (string, error
 		renewal = found[1]
 	}
 
-	crtUrl := "https://" + endpoint + "/certsrv/certnew.cer?ReqID=CACert&Enc=b64&Mode=inst&" + renewal
-	req, err = http.NewRequest("GET", crtUrl, nil)
+	crtURL := "https://" + endpoint + "/certsrv/certnew.cer?ReqID=CACert&Enc=b64&Mode=inst&" + renewal
+	req, err = http.NewRequest("GET", crtURL, nil)
 
 	if err != nil {
-		return "", fmt.Errorf("failed to request %s: %v", crtUrl, err)
+		return "", fmt.Errorf("failed to request %s: %v", crtURL, err)
 	}
 
 	req.SetBasicAuth(username, password)
@@ -116,7 +116,7 @@ func getCaCert(endpoint string, username string, password string) (string, error
 	defer resp.Body.Close()
 
 	if err != nil {
-		return "", fmt.Errorf("failed to request %s: %v", crtUrl, err)
+		return "", fmt.Errorf("failed to request %s: %v", crtURL, err)
 	}
 
 	dataInBytes, err = ioutil.ReadAll(resp.Body)
@@ -125,7 +125,7 @@ func getCaCert(endpoint string, username string, password string) (string, error
 }
 
 func genCertRequest(csr string, endpoint string, username string, password string) (string, error) {
-	var resUrl string
+	var resURL string
 
 	data := url.Values{}
 	data.Set("Mode", "newreq")
@@ -168,17 +168,16 @@ func genCertRequest(csr string, endpoint string, username string, password strin
 	pageContent := string(dataInBytes)
 
 	re := regexp.MustCompile("certnew.cer\\?ReqID=([0-9]*)&amp;Enc=b64")
-	reqId := re.FindString(string(pageContent))
+	reqID := re.FindString(string(pageContent))
 
-	if reqId == "" {
+	if reqID == "" {
 		return "", fmt.Errorf("failed to get new cert ReqID: %v", err)
-	} else {
-		resUrl = "https://" + endpoint + "/certsrv/" + reqId
-	}
-	return resUrl, nil
+	} 
+	resURL = "https://" + endpoint + "/certsrv/" + reqID
+	return resURL, nil
 }
 
-func fetchCertResult(resUrl string, username string, password string) (string, error) {
+func fetchCertResult(resURL string, username string, password string) (string, error) {
 	client := &http.Client{
 		Transport: ntlmssp.Negotiator{
 			RoundTripper: &http.Transport{
@@ -186,7 +185,7 @@ func fetchCertResult(resUrl string, username string, password string) (string, e
 			},
 		},
 	}
-	req, err := http.NewRequest("GET", resUrl, nil)
+	req, err := http.NewRequest("GET", resURL, nil)
 
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch resulting cert: %v", err)
@@ -205,6 +204,7 @@ func fetchCertResult(resUrl string, username string, password string) (string, e
 	return string(dataInBytes), err
 }
 
+// CreateCertificates returns certs/keys as strings
 func CreateCertificates(endpoint string, username string, password string, hosts string) (cacrt string, tlskey string, tlscert string, err error) {
 	var privateKey bytes.Buffer
 
@@ -231,13 +231,13 @@ func CreateCertificates(endpoint string, username string, password string, hosts
 		return "", "", "", fmt.Errorf("failed to generate csr: %v", err)
 	}
 
-	resUrl, err := genCertRequest(csr.String(), endpoint, username, password)
+	resURL, err := genCertRequest(csr.String(), endpoint, username, password)
 
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to generate csr: %v", err)
 	}
 
-	resCrt, err := fetchCertResult(resUrl, username, password)
+	resCrt, err := fetchCertResult(resURL, username, password)
 
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to fetch result: %v", err)
