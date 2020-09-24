@@ -7,8 +7,7 @@ import (
 	"text/template"
 )
 
-const secret = `
-apiVersion: v1
+const secret = `apiVersion: v1
 kind: Secret
 name: tls-secret
 data:
@@ -17,6 +16,7 @@ data:
   tls.crt: {{.Tlscrt}}
 `
 
+// OutputSecret prints kubernetes secret of certs/keys
 func OutputSecret(cacrt string, tlskey string, tlscrt string) error {
 	t := template.Must(template.New("secret").Parse(secret))
 	r := struct {

@@ -1,5 +1,6 @@
 #!/bin/bash
 
 golint \
-    ./cmd/gobblah \
-    ./pkg/gobblah
+    ./cmd/* \
+    ./pkg/output/* \
+    ./pkg/*
