@@ -67,7 +67,9 @@ func genCsr(template x509.CertificateRequest, keyBytes *rsa.PrivateKey) (bytes.B
 	return csr, nil
 }
 
-func getCaCert(endpoint string, username string, password string) (string, error) {
+func makeRequest(url string, username string, password string, body string) (*http.Response, error) {
+	var err error
+	var req *http.Request
 	client := &http.Client{
 		Transport: ntlmssp.Negotiator{
 			RoundTripper: &http.Transport{
@@ -75,14 +77,28 @@ func getCaCert(endpoint string, username string, password string) (string, error
 			},
 		},
 	}
-	req, err := http.NewRequest("GET", "https://"+endpoint+"/certsrv/certcarc.asp", nil)
+
+	if body != "" {
+		req, err = http.NewRequest("POST", url, strings.NewReader(body))
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Add("Content-Length", strconv.Itoa(len(body)))
+	} else {
+		req, err = http.NewRequest("GET", url, nil)
+	}
 
 	if err != nil {
-		return "", fmt.Errorf("failed to get ca cer: %v", err)
+		return nil, fmt.Errorf("failed to request %s: %v", url, err)
 	}
 
 	req.SetBasicAuth(username, password)
+
 	resp, err := client.Do(req)
+	return resp, err
+}
+
+func getCaCert(endpoint string, username string, password string) (string, error) {
+	resp, err := makeRequest("https://"+endpoint+"/certsrv/certcarc.asp", username, password, "")
+
 	defer resp.Body.Close()
 
 	if err != nil {
@@ -105,14 +121,7 @@ func getCaCert(endpoint string, username string, password string) (string, error
 	}
 
 	crtURL := "https://" + endpoint + "/certsrv/certnew.cer?ReqID=CACert&Enc=b64&Mode=inst&" + renewal
-	req, err = http.NewRequest("GET", crtURL, nil)
-
-	if err != nil {
-		return "", fmt.Errorf("failed to request %s: %v", crtURL, err)
-	}
-
-	req.SetBasicAuth(username, password)
-	resp, err = client.Do(req)
+	resp, err = makeRequest(crtURL, username, password, "")
 	defer resp.Body.Close()
 
 	if err != nil {
@@ -134,30 +143,13 @@ func genCertRequest(csr string, endpoint string, username string, password strin
 	data.Set("TargetStoreFlags", "0")
 	data.Set("SaveCert", "yes")
 
-	client := &http.Client{
-		Transport: ntlmssp.Negotiator{
-			RoundTripper: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			},
-		},
-	}
-
-	req, err := http.NewRequest("POST", "https://"+endpoint+"/certsrv/certfnsh.asp", strings.NewReader(data.Encode()))
-
-	if err != nil {
-		return "", fmt.Errorf("failed to request cert request: %v", err)
-	}
-
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
-	req.SetBasicAuth(username, password)
-	resp, err := client.Do(req)
-
-	defer resp.Body.Close()
+	resp, err := makeRequest("https://"+endpoint+"/certsrv/certfnsh.asp", username, password, data.Encode())
 
 	if err != nil {
 		return "", fmt.Errorf("fail: %v", err)
 	}
+
+	defer resp.Body.Close()
 
 	dataInBytes, err := ioutil.ReadAll(resp.Body)
 
@@ -172,27 +164,13 @@ func genCertRequest(csr string, endpoint string, username string, password strin
 
 	if reqID == "" {
 		return "", fmt.Errorf("failed to get new cert ReqID: %v", err)
-	} 
+	}
 	resURL = "https://" + endpoint + "/certsrv/" + reqID
 	return resURL, nil
 }
 
 func fetchCertResult(resURL string, username string, password string) (string, error) {
-	client := &http.Client{
-		Transport: ntlmssp.Negotiator{
-			RoundTripper: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			},
-		},
-	}
-	req, err := http.NewRequest("GET", resURL, nil)
-
-	if err != nil {
-		return "", fmt.Errorf("failed to fetch resulting cert: %v", err)
-	}
-
-	req.SetBasicAuth(username, password)
-	resp, err := client.Do(req)
+	resp, err := makeRequest(resURL, username, password, "")
 
 	defer resp.Body.Close()
 
@@ -234,7 +212,7 @@ func CreateCertificates(endpoint string, username string, password string, hosts
 	resURL, err := genCertRequest(csr.String(), endpoint, username, password)
 
 	if err != nil {
-		return "", "", "", fmt.Errorf("failed to generate csr: %v", err)
+		return "", "", "", fmt.Errorf("failed to generate cert request: %v", err)
 	}
 
 	resCrt, err := fetchCertResult(resURL, username, password)
