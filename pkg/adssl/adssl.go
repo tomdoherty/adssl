@@ -157,10 +157,8 @@ func genCertRequest(csr string, endpoint string, username string, password strin
 		return "", fmt.Errorf("fail: %v", err)
 	}
 
-	pageContent := string(dataInBytes)
-
 	re := regexp.MustCompile("certnew.cer\\?ReqID=([0-9]*)&amp;Enc=b64")
-	reqID := re.FindString(string(pageContent))
+	reqID := re.FindString(string(dataInBytes))
 
 	if reqID == "" {
 		return "", fmt.Errorf("failed to get new cert ReqID: %v", err)
