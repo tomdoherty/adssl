@@ -122,11 +122,12 @@ func getCaCert(endpoint string, username string, password string) (string, error
 
 	crtURL := "https://" + endpoint + "/certsrv/certnew.cer?ReqID=CACert&Enc=b64&Mode=inst&" + renewal
 	resp, err = makeRequest(crtURL, username, password, "")
-	defer resp.Body.Close()
 
 	if err != nil {
 		return "", fmt.Errorf("failed to request %s: %v", crtURL, err)
 	}
+
+	defer resp.Body.Close()
 
 	dataInBytes, err = ioutil.ReadAll(resp.Body)
 	return string(dataInBytes), err
@@ -170,11 +171,11 @@ func genCertRequest(csr string, endpoint string, username string, password strin
 func fetchCertResult(resURL string, username string, password string) (string, error) {
 	resp, err := makeRequest(resURL, username, password, "")
 
-	defer resp.Body.Close()
-
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch resulting cert: %v", err)
 	}
+
+	defer resp.Body.Close()
 
 	dataInBytes, err := ioutil.ReadAll(resp.Body)
 	return string(dataInBytes), err

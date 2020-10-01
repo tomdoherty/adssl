@@ -74,6 +74,9 @@ func (c *Config) Run(args []string) error {
 			var res Result
 			var err error
 			res.Cacrt, res.Tlskey, res.Tlscrt, err = adssl.CreateCertificates(c.Endpoint, c.Username, c.Password, c.Hosts)
+			if err != nil {
+				log.Fatal(err)
+			}
 			if ctx.Bool("k8s-secret") {
 				kubernetes.OutputSecret(res.Cacrt, res.Tlskey, res.Tlscrt)
 			} else {
