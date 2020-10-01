@@ -99,11 +99,11 @@ func makeRequest(url string, username string, password string, body string) (*ht
 func getCaCert(endpoint string, username string, password string) (string, error) {
 	resp, err := makeRequest("https://"+endpoint+"/certsrv/certcarc.asp", username, password, "")
 
-	defer resp.Body.Close()
-
 	if err != nil {
 		return "", fmt.Errorf("fail: %v", err)
 	}
+
+	defer resp.Body.Close()
 
 	dataInBytes, err := ioutil.ReadAll(resp.Body)
 
