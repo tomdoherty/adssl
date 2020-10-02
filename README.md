@@ -1,6 +1,7 @@
 # gobblah
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/TomWright/dasel)](https://goreportcard.com/report/github.com/TomWright/dasel)
+[![Go Actions Status](https://github.com/tomdoherty/gobblah/workflows/Go/badge.svg)](https://github.com/tomdoherty/gobblah/actions)
 
 ## Usage
 ```shell
