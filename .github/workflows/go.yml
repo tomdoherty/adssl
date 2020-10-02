@@ -30,8 +30,12 @@ jobs:
             dep ensure
         fi
 
-    - name: Build
-      run: go build -v .
+    - name: Lint
+      run: |
+        golint \
+            ./cmd/* \
+            ./pkg/output/* \
+            ./pkg/*
 
-    - name: Test
-      run: go test -v .
+    - name: Build
+      run: go build -v ./cmd/gobblah
