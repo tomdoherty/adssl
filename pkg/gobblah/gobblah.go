@@ -34,9 +34,9 @@ func (c *Config) Run(args []string) error {
 			&cli.StringFlag{
 				Name:        "endpoint",
 				Aliases:     []string{"e"},
-				Value:       "foo.bar.com",
 				Usage:       "endpoint to use",
 				EnvVars:     []string{"ENDPOINT"},
+				Required:    true,
 				Destination: &c.Endpoint,
 			},
 			&cli.StringFlag{
@@ -50,17 +50,17 @@ func (c *Config) Run(args []string) error {
 			&cli.StringFlag{
 				Name:        "password",
 				Aliases:     []string{"p"},
-				Value:       "password",
 				Usage:       "username to authenticate with",
 				EnvVars:     []string{"PASSWORD"},
+				Required:    true,
 				Destination: &c.Password,
 			},
 			&cli.StringFlag{
 				Name:        "hosts",
 				Aliases:     []string{"l"},
-				Value:       "foo1,foo2,foo3",
 				Usage:       "comma delimited list of hosts to add to cert",
-				EnvVars:     []string{"HOSTSLIST"},
+				EnvVars:     []string{"HOSTS"},
+				Required:    true,
 				Destination: &c.Hosts,
 			},
 			&cli.BoolFlag{
