@@ -1,6 +1,6 @@
 # gobblah
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/TomWright/dasel)](https://goreportcard.com/report/github.com/TomWright/dasel)
+[![Go Report Card](https://goreportcard.com/badge/github.com/tomdoherty/gobblah)](https://goreportcard.com/report/github.com/tomdoherty/gobblah)
 [![Go Actions Status](https://github.com/tomdoherty/gobblah/workflows/Go/badge.svg)](https://github.com/tomdoherty/gobblah/actions)
 
 ## Usage
