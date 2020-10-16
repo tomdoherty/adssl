@@ -33,10 +33,7 @@ jobs:
 
     - name: Lint
       run: |
-        golint \
-            ./cmd/* \
-            ./pkg/output/* \
-            ./pkg/*
+        golint ./cmd .
 
     - name: Build
       run: go build -v ./cmd/adssl.go
