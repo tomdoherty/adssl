@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -77,9 +76,13 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-
-			fmt.Println(res.CaCert)
-			fmt.Println(res.Result)
+			if ctx.Bool("k8s-secret") {
+				adssl.PrintKubeSecret(os.Stdout, res)
+			} else {
+				adssl.WriteFile("ca.crt", res.CaCert)
+				adssl.WriteFile("tls.key", res.PrivateKeyString)
+				adssl.WriteFile("tls.crt", res.Result)
+			}
 
 			return err
 		},

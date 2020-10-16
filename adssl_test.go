@@ -1,10 +1,33 @@
 package adssl
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
+
+func TestPrintKubeSecret(t *testing.T) {
+	var output bytes.Buffer
+	c := Certificate{
+		PrivateKeyString: "key",
+		Result:           "result",
+		CaCert:           "ca cert",
+	}
+	PrintKubeSecret(&output, c)
+	want := `apiVersion: v1
+kind: Secret
+name: tls-secret
+data:
+  ca.crt: Y2EgY2VydA==
+  tls.key: a2V5
+  tls.crt: cmVzdWx0
+`
+	if output.String() != want {
+		t.Errorf("want %q, got %q", want, output.String())
+	}
+
+}
 
 func TestNew(t *testing.T) {
 	srv := serverMock()

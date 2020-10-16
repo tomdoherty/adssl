@@ -9,6 +9,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -17,6 +18,9 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"text/template"
+
+	b64 "encoding/base64"
 
 	"github.com/Azure/go-ntlmssp"
 )
@@ -38,6 +42,7 @@ type Request struct {
 type Certificate struct {
 	PrivateKey         *rsa.PrivateKey
 	RequestTemplate    x509.CertificateRequest
+	PrivateKeyString   string
 	CaCert             string
 	CertificateRequest string
 	Result             string
@@ -64,7 +69,14 @@ func (c *Certificate) generateTemplate(r Request) error {
 }
 
 func (c *Certificate) generatePrivateKey() (err error) {
+	var keyBuffer bytes.Buffer
+
 	c.PrivateKey, err = rsa.GenerateKey(rand.Reader, 2048)
+
+	if err := pem.Encode(&keyBuffer, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(c.PrivateKey)}); err != nil {
+		return err
+	}
+	c.PrivateKeyString = keyBuffer.String()
 	return err
 }
 
@@ -199,6 +211,39 @@ func (c *Certificate) fetchCertResult(s Server) error {
 
 	c.Result = string(dataInBytes)
 	return nil
+}
+
+// PrintKubeSecret ouputs Certificate in kubernetes YAML
+func PrintKubeSecret(w io.Writer, c Certificate) error {
+	secret := `apiVersion: v1
+kind: Secret
+name: tls-secret
+data:
+  ca.crt: {{.Cacrt}}
+  tls.key: {{.Tlskey}}
+  tls.crt: {{.Tlscrt}}
+`
+	t := template.Must(template.New("secret").Parse(secret))
+	r := struct {
+		Cacrt  string
+		Tlskey string
+		Tlscrt string
+	}{
+		b64.StdEncoding.EncodeToString([]byte(c.CaCert)),
+		b64.StdEncoding.EncodeToString([]byte(c.PrivateKeyString)),
+		b64.StdEncoding.EncodeToString([]byte(c.Result)),
+	}
+	if err := t.Execute(w, r); err != nil {
+		return fmt.Errorf("error templating secret: %v", err)
+	}
+	return nil
+}
+
+// WriteFile writes content to filename
+func WriteFile(filename, content string) error {
+	fmt.Printf("writing %q\n", filename)
+	err := ioutil.WriteFile(filename, []byte(content), 0600)
+	return err
 }
 
 // New returns a new Request
