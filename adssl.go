@@ -33,7 +33,7 @@ type Server struct {
 // Request contains all we need to make the Certificate Request
 type Request struct {
 	CommonName                  string
-	Country, Province, Locality []string
+	Country, Province, Locality string
 	DNSNames                    string
 	IPAddresses                 string
 }
@@ -58,9 +58,9 @@ func (c *Certificate) generateTemplate(r Request) error {
 	c.RequestTemplate = x509.CertificateRequest{
 		Subject: pkix.Name{
 			CommonName: r.CommonName,
-			Country:    r.Country,
-			Province:   r.Province,
-			Locality:   r.Locality,
+			Country:    []string{r.Country},
+			Province:   []string{r.Province},
+			Locality:   []string{r.Locality},
 		},
 		DNSNames:    strings.Split(r.DNSNames, ","),
 		IPAddresses: ipaddrs,

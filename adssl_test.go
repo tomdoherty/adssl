@@ -41,9 +41,9 @@ func TestNew(t *testing.T) {
 
 	r := Request{
 		CommonName:  "foo.bar",
-		Country:     []string{"US"},
-		Province:    []string{"New Jersey"},
-		Locality:    []string{"Weehawken"},
+		Country:     "US",
+		Province:    "New Jersey",
+		Locality:    "Weehawken",
 		DNSNames:    "boo.bar",
 		IPAddresses: "1.2.3.4",
 	}

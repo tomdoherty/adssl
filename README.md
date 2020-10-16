@@ -20,6 +20,9 @@ GLOBAL OPTIONS:
    --endpoint value, -e value    endpoint to use [$ENDPOINT]
    --username value, -u value    username to authenticate with (default: "tom") [$USER]
    --password value, -p value    username to authenticate with [$PASSWORD]
+   --country value, -C value     cert country [$COUNTRY]
+   --province value, -P value    cert province [$PROVINCE]
+   --locality value, -L value    cert locality [$LOCALITY]
    --commonname value, -c value  common name [$COMMON]
    --hosts value, -l value       comma delimited list of hosts to add to cert [$HOSTS]
    --ips value, -i value         comma delimited list of IPAddresses to add to cert [$IPADDRS]
@@ -30,6 +33,6 @@ GLOBAL OPTIONS:
 
 ### Example
 ```shell
-adssl -e myad.example.com -p p4ssw0rd -c host1 -l host2,host3 -i 1.1.1.1 -k | kubectl apply -f -
+adssl -e https://ad -u tom -p sup3rs3cur3 --country US --province "New Jersey" --locality Weehawken --commonname host1 --hosts host1,host2 --ips 1.1.1.1,1.1.1.2
 
 ```
