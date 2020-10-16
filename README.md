@@ -1,8 +1,8 @@
 # adssl
 
 [![](https://goreportcard.com/badge/github.com/tomdoherty/adssl)](https://goreportcard.com/report/github.com/tomdoherty/adssl)
-[![](https://img.shields.io/github/release/tomdoherty/govid.svg)](https://github.com/tomdoherty/govid/releases/latest)
 [![](https://github.com/tomdoherty/adssl/workflows/Go/badge.svg)](https://github.com/tomdoherty/adssl/actions)
+[![](https://img.shields.io/github/release/tomdoherty/adssl.svg)](https://github.com/tomdoherty/adssl/releases/latest)
 
 ## Usage
 
