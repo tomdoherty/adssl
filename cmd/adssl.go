@@ -1,32 +1,18 @@
-package gobblah
+package main
 
 import (
+	"fmt"
 	"log"
-	"os/user"
+	"os"
 
-	"github.com/tomdoherty/gobblah/pkg/adssl"
-	"github.com/tomdoherty/gobblah/pkg/output/files"
-	"github.com/tomdoherty/gobblah/pkg/output/kubernetes"
+	adssl "github.com/tomdoherty/goblah"
 	"github.com/urfave/cli/v2"
 )
 
-// Config holds configuration for command
-type Config struct {
-	Endpoint string
-	Username string
-	Password string
-	Hosts    string
-}
+func main() {
+	s := adssl.Server{}
+	r := adssl.Request{}
 
-// Result holds the certs/keys generated
-type Result struct {
-	Cacrt  string
-	Tlskey string
-	Tlscrt string
-}
-
-// Run initiates the action
-func (c *Config) Run(args []string) error {
 	app := &cli.App{
 		Usage: "Generate SSL certificates against Active Directory",
 
@@ -37,15 +23,15 @@ func (c *Config) Run(args []string) error {
 				Usage:       "endpoint to use",
 				EnvVars:     []string{"ENDPOINT"},
 				Required:    true,
-				Destination: &c.Endpoint,
+				Destination: &s.Endpoint,
 			},
 			&cli.StringFlag{
 				Name:        "username",
 				Aliases:     []string{"u"},
-				Value:       usernameAsString(),
 				Usage:       "username to authenticate with",
 				EnvVars:     []string{"USER"},
-				Destination: &c.Username,
+				Required:    true,
+				Destination: &s.Username,
 			},
 			&cli.StringFlag{
 				Name:        "password",
@@ -53,7 +39,15 @@ func (c *Config) Run(args []string) error {
 				Usage:       "username to authenticate with",
 				EnvVars:     []string{"PASSWORD"},
 				Required:    true,
-				Destination: &c.Password,
+				Destination: &s.Password,
+			},
+			&cli.StringFlag{
+				Name:        "commonname",
+				Aliases:     []string{"c"},
+				Usage:       "common name",
+				EnvVars:     []string{"COMMON"},
+				Required:    true,
+				Destination: &r.CommonName,
 			},
 			&cli.StringFlag{
 				Name:        "hosts",
@@ -61,7 +55,15 @@ func (c *Config) Run(args []string) error {
 				Usage:       "comma delimited list of hosts to add to cert",
 				EnvVars:     []string{"HOSTS"},
 				Required:    true,
-				Destination: &c.Hosts,
+				Destination: &r.DNSNames,
+			},
+			&cli.StringFlag{
+				Name:        "ips",
+				Aliases:     []string{"i"},
+				Usage:       "comma delimited list of IPAddresses to add to cert",
+				EnvVars:     []string{"IPADDRS"},
+				Required:    true,
+				Destination: &r.IPAddresses,
 			},
 			&cli.BoolFlag{
 				Name:    "k8s-secret",
@@ -71,29 +73,17 @@ func (c *Config) Run(args []string) error {
 			},
 		},
 		Action: func(ctx *cli.Context) error {
-			var res Result
-			var err error
-			res.Cacrt, res.Tlskey, res.Tlscrt, err = adssl.CreateCertificates(c.Endpoint, c.Username, c.Password, c.Hosts)
+			res, err := adssl.New(s, r)
 			if err != nil {
 				log.Fatal(err)
 			}
-			if ctx.Bool("k8s-secret") {
-				kubernetes.OutputSecret(res.Cacrt, res.Tlskey, res.Tlscrt)
-			} else {
-				files.OutputFiles(res.Cacrt, res.Tlskey, res.Tlscrt)
-			}
+
+			fmt.Println(res.CaCert)
+			fmt.Println(res.Result)
+
 			return err
 		},
 	}
 
-	err := app.Run(args)
-	return err
-}
-
-func usernameAsString() string {
-	username, err := user.Current()
-	if err != nil {
-		log.Fatal("error looking up current user")
-	}
-	return username.Username
+	log.Fatal(app.Run(os.Args))
 }

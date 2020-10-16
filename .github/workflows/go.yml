@@ -39,4 +39,4 @@ jobs:
             ./pkg/*
 
     - name: Build
-      run: go build -v ./cmd/gobblah
+      run: go build -v ./cmd/adssl.go

@@ -9,19 +9,16 @@ before:
 builds:
   - env:
       - CGO_ENABLED=0
-    dir: cmd/gobblah
+    main: ./cmd/adssl.go
+    binary: adssl
     goos:
       - linux
-      - windows
-      - darwin
+      - darwin 
+    goarch:
+      - amd64
 archives:
-  - replacements:
-      darwin: Darwin
-      linux: Linux
-      windows: Windows
-      386: i386
-      amd64: x86_64
-    format: binary
+  - format: binary
+    name_template: "{{ .Binary }}_{{ .Os }}"
 checksum:
   name_template: 'checksums.txt'
 snapshot:

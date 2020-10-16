@@ -1,4 +1,4 @@
-module github.com/tomdoherty/gobblah
+module github.com/tomdoherty/adssl
 
 go 1.15
 
