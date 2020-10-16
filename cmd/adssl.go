@@ -89,6 +89,13 @@ func main() {
 				Destination: &r.IPAddresses,
 			},
 			&cli.BoolFlag{
+				Name:        "csronly",
+				Aliases:     []string{"O"},
+				Usage:       "write csr/key only",
+				Value:       false,
+				Destination: &r.CsrOnly,
+			},
+			&cli.BoolFlag{
 				Name:    "k8s-secret",
 				Aliases: []string{"k"},
 				Usage:   "output as a kubernetes secret",
@@ -103,9 +110,11 @@ func main() {
 			if ctx.Bool("k8s-secret") {
 				adssl.PrintKubeSecret(os.Stdout, res)
 			} else {
-				adssl.WriteFile("ca.crt", res.CaCert)
-				adssl.WriteFile("tls.key", res.PrivateKeyString)
-				adssl.WriteFile("tls.crt", res.Result)
+				if !r.CsrOnly {
+					adssl.WriteFile("ca.crt", res.CaCert)
+					adssl.WriteFile("tls.key", res.PrivateKeyString)
+					adssl.WriteFile("tls.crt", res.Result)
+				}
 			}
 
 			return err

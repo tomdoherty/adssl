@@ -36,6 +36,7 @@ type Request struct {
 	Country, Province, Locality string
 	DNSNames                    string
 	IPAddresses                 string
+	CsrOnly                     bool
 }
 
 // Certificate contains a x509 certificate
@@ -257,6 +258,11 @@ func New(s Server, r Request) (Certificate, error) {
 	}
 	if err := c.generateCertificateRequest(r); err != nil {
 		log.Fatal(err)
+	}
+	if r.CsrOnly {
+		WriteFile("tls.csr", c.CertificateRequest)
+		WriteFile("tls.key", c.PrivateKeyString)
+		return c, nil
 	}
 	if err := c.requestNewCert(s); err != nil {
 		log.Fatal(err)
