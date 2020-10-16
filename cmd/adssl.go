@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	adssl "github.com/tomdoherty/goblah"
+	"github.com/tomdoherty/adssl"
 	"github.com/urfave/cli/v2"
 )
 
@@ -85,5 +85,7 @@ func main() {
 		},
 	}
 
-	log.Fatal(app.Run(os.Args))
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal(err)
+	}
 }
