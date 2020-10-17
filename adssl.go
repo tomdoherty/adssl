@@ -213,6 +213,23 @@ func (c *Certificate) fetchCertResult(s Server) error {
 	return nil
 }
 
+// GenerateCertFromCsr takes a CSR and returns a signed cert
+func GenerateCertFromCsr(s Server, c Certificate) (Certificate, error) {
+	if s.Endpoint == "" || s.Username == "" || s.Password == "" {
+		return c, fmt.Errorf("Must specify Endpoint/Username/Password to request certs")
+	}
+	if c.CertificateRequest == "" {
+		return c, fmt.Errorf("Certs must contain CertificateRequest")
+	}
+	if err := c.requestNewCert(s); err != nil {
+		return c, fmt.Errorf("fatal: %v", err)
+	}
+	if err := c.fetchCertResult(s); err != nil {
+		return c, fmt.Errorf("fatal: %v", err)
+	}
+	return c, nil
+}
+
 // PrintKubeSecret ouputs Certificate in kubernetes YAML
 func PrintKubeSecret(w io.Writer, c Certificate) error {
 	secret := `apiVersion: v1
