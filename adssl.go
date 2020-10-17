@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -250,28 +249,34 @@ func WriteFile(filename, content string) error {
 // New returns a new Request
 func New(s Server, r Request) (Certificate, error) {
 	var c Certificate
+	if r.IPAddresses == "" && r.DNSNames == "" {
+		return c, fmt.Errorf("Must specify at least one of hosts/ips")
+	}
 	if err := c.generatePrivateKey(); err != nil {
-		log.Fatal(err)
+		return c, fmt.Errorf("fatal: %v", err)
 	}
 	if err := c.generateTemplate(r); err != nil {
-		log.Fatal(err)
+		return c, fmt.Errorf("fatal: %v", err)
 	}
 	if err := c.generateCertificateRequest(r); err != nil {
-		log.Fatal(err)
+		return c, fmt.Errorf("fatal: %v", err)
 	}
 	if r.CsrOnly {
 		WriteFile("tls.csr", c.CertificateRequest)
 		WriteFile("tls.key", c.PrivateKeyString)
 		return c, nil
 	}
+	if s.Endpoint == "" || s.Username == "" || s.Password == "" {
+		return c, fmt.Errorf("Must specify Endpoint/Username/Password to request certs")
+	}
 	if err := c.requestNewCert(s); err != nil {
-		log.Fatal(err)
+		return c, fmt.Errorf("fatal: %v", err)
 	}
 	if err := c.fetchCertResult(s); err != nil {
-		log.Fatal(err)
+		return c, fmt.Errorf("fatal: %v", err)
 	}
 	if err := c.fetchCaCert(s); err != nil {
-		log.Fatal(err)
+		return c, fmt.Errorf("fatal: %v", err)
 	}
 
 	return c, nil

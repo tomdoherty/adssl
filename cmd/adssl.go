@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/tomdoherty/adssl"
@@ -22,7 +21,6 @@ func main() {
 				Aliases:     []string{"e"},
 				Usage:       "endpoint to use",
 				EnvVars:     []string{"ENDPOINT"},
-				Required:    true,
 				Destination: &s.Endpoint,
 			},
 			&cli.StringFlag{
@@ -30,7 +28,6 @@ func main() {
 				Aliases:     []string{"u"},
 				Usage:       "username to authenticate with",
 				EnvVars:     []string{"USER"},
-				Required:    true,
 				Destination: &s.Username,
 			},
 			&cli.StringFlag{
@@ -38,7 +35,6 @@ func main() {
 				Aliases:     []string{"p"},
 				Usage:       "username to authenticate with",
 				EnvVars:     []string{"PASSWORD"},
-				Required:    true,
 				Destination: &s.Password,
 			},
 			&cli.StringFlag{
@@ -78,7 +74,6 @@ func main() {
 				Aliases:     []string{"l"},
 				Usage:       "comma delimited list of hosts to add to cert",
 				EnvVars:     []string{"HOSTS"},
-				Required:    true,
 				Destination: &r.DNSNames,
 			},
 			&cli.StringFlag{
@@ -86,7 +81,6 @@ func main() {
 				Aliases:     []string{"i"},
 				Usage:       "comma delimited list of IPAddresses to add to cert",
 				EnvVars:     []string{"IPADDRS"},
-				Required:    true,
 				Destination: &r.IPAddresses,
 			},
 			&cli.BoolFlag{
@@ -106,7 +100,8 @@ func main() {
 		Action: func(ctx *cli.Context) error {
 			res, err := adssl.New(s, r)
 			if err != nil {
-				log.Fatal(err)
+				fmt.Printf("fatal: %v\n", err)
+				os.Exit(1)
 			}
 			if ctx.Bool("k8s-secret") {
 				adssl.PrintKubeSecret(os.Stdout, res)
