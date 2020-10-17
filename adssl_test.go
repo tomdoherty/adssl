@@ -67,6 +67,31 @@ func TestNew(t *testing.T) {
 	}
 }
 
+func TestGenerateCertFromCsr(t *testing.T) {
+	srv := serverMock()
+	defer srv.Close()
+
+	c := Certificate{
+		CertificateRequest: "this is a CSR request",
+	}
+
+	s := Server{
+		Endpoint: srv.URL,
+		Username: "user",
+		Password: "pass",
+	}
+
+	want := "-----BEGIN CERTIFICATE-----666-----END CERTIFICATE-----"
+	got, err := GenerateCertFromCsr(s, c)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got.Result != want {
+		t.Errorf("want %q, got %q", want, got.Result)
+	}
+}
+
 func serverMock() *httptest.Server {
 	handler := http.NewServeMux()
 	handler.HandleFunc("/certsrv/certcarc.asp", certcarcMock)
