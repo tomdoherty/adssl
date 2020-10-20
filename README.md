@@ -26,6 +26,7 @@ GLOBAL OPTIONS:
    --commonname value, -c value  common name [$COMMON]
    --hosts value, -l value       comma delimited list of hosts to add to cert [$HOSTS]
    --ips value, -i value         comma delimited list of IPAddresses to add to cert [$IPADDRS]
+   --prefix value, -f value      prefix output files [$PREFIX]
    --csronly, -O                 write csr/key only (default: false)
    --k8s-secret, -k              output as a kubernetes secret (default: false)
    --help, -h                    show help (default: false)
