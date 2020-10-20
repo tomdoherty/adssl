@@ -19,7 +19,7 @@ func main() {
 			&cli.StringFlag{
 				Name:        "endpoint",
 				Aliases:     []string{"e"},
-				Usage:       "endpoint to use",
+				Usage:       "endpoint url to use",
 				EnvVars:     []string{"ENDPOINT"},
 				Destination: &s.Endpoint,
 			},
@@ -83,6 +83,13 @@ func main() {
 				EnvVars:     []string{"IPADDRS"},
 				Destination: &r.IPAddresses,
 			},
+			&cli.StringFlag{
+				Name:        "prefix",
+				Aliases:     []string{"f"},
+				Usage:       "prefix output files",
+				EnvVars:     []string{"PREFIX"},
+				Destination: &r.Prefix,
+			},
 			&cli.BoolFlag{
 				Name:        "csronly",
 				Aliases:     []string{"O"},
@@ -107,9 +114,9 @@ func main() {
 				adssl.PrintKubeSecret(os.Stdout, res)
 			} else {
 				if !r.CsrOnly {
-					adssl.WriteFile("ca.crt", res.CaCert)
-					adssl.WriteFile("tls.key", res.PrivateKeyString)
-					adssl.WriteFile("tls.crt", res.Result)
+					adssl.WriteFile(r.Prefix+"ca.crt", res.CaCert)
+					adssl.WriteFile(r.Prefix+"tls.key", res.PrivateKeyString)
+					adssl.WriteFile(r.Prefix+"tls.crt", res.Result)
 				}
 			}
 

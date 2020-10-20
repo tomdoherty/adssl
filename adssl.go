@@ -35,6 +35,7 @@ type Request struct {
 	Country, Province, Locality string
 	DNSNames                    string
 	IPAddresses                 string
+	Prefix                      string
 	CsrOnly                     bool
 }
 
@@ -279,8 +280,8 @@ func New(s Server, r Request) (Certificate, error) {
 		return c, fmt.Errorf("fatal: %v", err)
 	}
 	if r.CsrOnly {
-		WriteFile("tls.csr", c.CertificateRequest)
-		WriteFile("tls.key", c.PrivateKeyString)
+		WriteFile(r.Prefix+"tls.csr", c.CertificateRequest)
+		WriteFile(r.Prefix+"tls.key", c.PrivateKeyString)
 		return c, nil
 	}
 	if s.Endpoint == "" || s.Username == "" || s.Password == "" {
