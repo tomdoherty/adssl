@@ -235,11 +235,13 @@ func GenerateCertFromCsr(s Server, c Certificate) (Certificate, error) {
 func PrintKubeSecret(w io.Writer, c Certificate) error {
 	secret := `apiVersion: v1
 kind: Secret
-name: tls-secret
+metadata:
+  name: tls-secret
 data:
   ca.crt: {{.Cacrt}}
   tls.key: {{.Tlskey}}
   tls.crt: {{.Tlscrt}}
+type: kubernetes.io/tls
 `
 	t := template.Must(template.New("secret").Parse(secret))
 	r := struct {
